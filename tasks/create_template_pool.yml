@@ -1,0 +1,13 @@
+- name: template pool exists
+  uri:
+    url: https://{{ proxmox_api_host }}:8006/api2/json/pools
+    method: POST
+    body_format: json
+    body:
+      poolid: "{{ proxmox_template_pool }}"
+    unredirected_headers: ["Authorization"]
+    headers:
+      Authorization: "PVEAPIToken={{ proxmox_api_user }}!{{ proxmox_api_token_id }}={{ proxmox_api_token_secret }}"
+  register: pool_create
+  failed_when: pool_create.status != 200 and 'already exists' not in pool_create.msg
+  changed_when: pool_create.status == 200

@@ -1,0 +1,31 @@
+- name: start debian cloudimage download task
+  uri:
+    url: "https://{{ proxmox_api_host }}:8006/api2/json/nodes/{{ proxmox_node }}/storage/{{ proxmox_template_storage }}/download-url"
+    method: POST
+    body_format: json
+    body:
+      content: "iso"
+      filename: "{{ debian_cloudimage_filename }}.iso"
+      url: "{{ debian_cloudimage_url }}"
+      checksum-algorithm: sha512
+      checksum: "{{ debian_cloudimage_checksum }}"
+    unredirected_headers: ["Authorization"]
+    headers:
+      Authorization: "PVEAPIToken={{ proxmox_api_user }}!{{ proxmox_api_token_id }}={{ proxmox_api_token_secret }}"
+  register: download_image
+  when: proxmox_kvm.changed
+
+- name: wait for debian cloudimage download task
+  community.general.proxmox_tasks_info:
+    api_host: "{{ proxmox_api_host }}"
+    api_user: "{{ proxmox_api_user }}"
+    api_token_id: "{{ proxmox_api_token_id }}"
+    api_token_secret: "{{ proxmox_api_token_secret }}"
+    node: "{{ proxmox_node }}"
+    task: "{{ download_image.json.data }}"
+  register: task_status
+  until: ("proxmox_tasks" in task_status and task_status["proxmox_tasks"][0]["status"] != "running")
+  failed_when: task_status["proxmox_tasks"][0]["status"] != "OK"
+  retries: 50
+  delay: 10
+  when: proxmox_kvm.changed

@@ -1,0 +1,59 @@
+---
+#TODO: only check, don't create the pool
+#- name: make sure the template pool exists
+#  import_tasks: create_template_pool.yml
+
+- name: make sure the storage is compatible
+  import_tasks: check_template_storage.yml
+
+- name: get the name and url of the debian cloudimage file
+  import_tasks: debian_cloudimage_url.yml
+
+- name: get the checksum of the cloudimage file
+  import_tasks: debian_cloudimage_checksum.yml
+
+- ansible.builtin.set_fact:
+    proxmox_template_name: "{{ debian_cloudimage_filename.rsplit('.', 1)[0] }}"
+
+- name: show url and checksum
+  ansible.builtin.debug:
+    msg:
+      debian_cloudimage_url: "{{ debian_cloudimage_url }}"
+      debian_cloudimage_checksum: "{{ debian_cloudimage_checksum }}"
+
+- name: debian cloudimage template exists
+  community.general.proxmox_kvm:
+    api_host: "{{ proxmox_api_host }}"
+    api_user: "{{ proxmox_api_user }}"
+    api_token_id: "{{ proxmox_api_token_id }}"
+    api_token_secret: "{{ proxmox_api_token_secret }}"
+    node: "{{ proxmox_node }}"
+    name: "{{ proxmox_template_name }}"
+    template: true
+    ostype: l26
+    agent: true
+    boot: c
+    bootdisk: virtio0
+    scsihw: virtio-scsi-pci
+  register: create_vm
+
+- name: download the image
+  import_tasks: download_image.yml
+  when: create_vm.changed
+
+- name: import the image to the template
+  command: >-
+    qm importdisk {{ create_vm.vmid }}
+    {{ (proxmox_storage_info.proxmox_storages | selectattr('storage', 'equalto', proxmox_template_storage) | first).path }}/template/iso/{{ debian_cloudimage_filename }}.iso
+    {{ proxmox_template_storage }} --format {{ debian_cloudimage_format }}
+  when: create_vm.changed
+
+- name: get the vm config
+  community.general.proxmox:
+    api_host: "{{ proxmox_api_host }}"
+    api_user: "{{ proxmox_api_user }}"
+    api_token_id: "{{ proxmox_api_token_id }}"
+    api_token_secret: "{{ proxmox_api_token_secret }}"
+    node: "{{ proxmox_node }}"
+    vmid: "{{ create_vm.vmid }}"
+  when: create_vm.changed

@@ -1,0 +1,8 @@
+---
+debian_cloudimage_repo_subdir: bullseye/daily
+debian_cloudimage_type: genericcloud-amd64
+debian_cloudimage_format: qcow2
+debian_cloudimage_repo_url: "https://cloud.debian.org/images/cloud/{{ debian_cloudimage_repo_subdir }}/"
+debian_cloudimage_release: latest
+#TODO: implement choice
+#proxmox_delegate_localhost: true

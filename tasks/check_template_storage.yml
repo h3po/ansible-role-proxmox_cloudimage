@@ -1,0 +1,12 @@
+- name: storage is compatible with qcow2
+  community.general.proxmox_storage_info:
+    api_host: "{{ proxmox_api_host }}"
+    api_user: "{{ proxmox_api_user }}"
+    api_token_id: "{{ proxmox_api_token_id }}"
+    api_token_secret: "{{ proxmox_api_token_secret }}"
+  register: proxmox_storage_info
+  failed_when: >
+    not (proxmox_storage_info.proxmox_storages | selectattr('storage', 'equalto', proxmox_template_storage)) or
+    not ("images" in (proxmox_storage_info.proxmox_storages | selectattr('storage', 'equalto', proxmox_template_storage) | first).content) or
+    not ("iso" in (proxmox_storage_info.proxmox_storages | selectattr('storage', 'equalto', proxmox_template_storage) | first).content) or
+    not (proxmox_storage_info.proxmox_storages | selectattr('storage', 'equalto', proxmox_template_storage) | first).type == "dir"
