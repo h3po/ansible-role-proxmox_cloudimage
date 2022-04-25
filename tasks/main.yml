@@ -1,11 +1,4 @@
 ---
-#TODO: only check, don't create the pool
-#- name: make sure the template pool exists
-#  import_tasks: create_template_pool.yml
-
-- name: make sure the storage is compatible
-  import_tasks: check_template_storage.yml
-
 - name: get the name and url of the debian cloudimage file
   import_tasks: debian_cloudimage_url.yml
 
