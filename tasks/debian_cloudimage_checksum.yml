@@ -3,10 +3,11 @@
   ansible.builtin.uri:
     url: "{{ debian_cloudimage_repo_url }}{{ debian_cloudimage_release }}/SHA512SUMS"
     return_content: true
+  register: debian_cloudimage_checksums_file
 
 - name: parse debian cloud image checksum
   ansible.builtin.set_fact:
     debian_cloudimage_checksum: >-
-      {{ debian_cloudimage_checksums.content.split('\n') | 
+      {{ debian_cloudimage_checksums_file.content.split('\n') | 
       map('regex_search', '(\w+)  %s' % debian_cloudimage_filename, '\1') | 
       select() | first | first }}
