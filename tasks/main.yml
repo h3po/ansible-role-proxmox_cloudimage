@@ -2,51 +2,88 @@
 - name: get the name and url of the debian cloudimage file
   import_tasks: debian_cloudimage_url.yml
 
+- name: remove the extension from the image filename to get the vm name
+  ansible.builtin.set_fact:
+    debian_template_name: "{{ debian_cloudimage_filename.rsplit('.', 1)[0] }}"
+
+- name: get list of vms
+  ansible.builtin.command: qm list
+  changed_when: false
+  register: qmlist
+
+- name: check if vm exists and get its vmid
+  ansible.builtin.set_fact:
+    debian_template_existed: "{{ debian_template_name in qmlist.stdout }}"
+    debian_template_created: false
+
+- name: store vmid of the existing vm
+  ansible.builtin.set_fact:
+    debian_template_vmid: "{{ qmlist.stdout | regex_search('(\\d+) %s' % debian_template_name, '\\1') | first }}"
+  when: debian_template_existed
+
+- name: get the next free vmid
+  ansible.builtin.command: pvesh get /cluster/nextid
+  changed_when: false
+  register: nextid
+  when: not debian_template_existed
+
+- name: store vmid of the new vm
+  ansible.builtin.set_fact:
+    debian_template_vmid: "{{ nextid.stdout }}"
+  when: not debian_template_existed
+
+- name: create the template vm
+  ansible.builtin.command: >-
+    qm create {{ debian_template_vmid }}
+    -name {{ debian_template_name }}
+    -template 1 -ostype l26 -agent 1 
+    -boot c -bootdisk scsi0 -scsihw virtio-scsi-pci
+    {{ "-pool %s" % proxmox_template_pool | default() }}
+  when: not debian_template_existed
+
 - name: get the checksum of the cloudimage file
   import_tasks: debian_cloudimage_checksum.yml
+  when: not debian_template_existed
 
-- ansible.builtin.set_fact:
-    proxmox_template_name: "{{ debian_cloudimage_filename.rsplit('.', 1)[0] }}"
+- block:
+    - name: download the image
+      ansible.builtin.get_url:
+        url: "{{ debian_cloudimage_url }}"
+        dest: "/tmp/{{ debian_cloudimage_filename }}"
+        checksum: "sha512:{{ debian_cloudimage_checksum }}"
+        mode: 0644
 
-- name: show url and checksum
-  ansible.builtin.debug:
-    msg:
-      debian_cloudimage_url: "{{ debian_cloudimage_url }}"
-      debian_cloudimage_checksum: "{{ debian_cloudimage_checksum }}"
+    - name: import the image to the template
+      ansible.builtin.command: >-
+        qm importdisk {{ debian_template_vmid }}
+        /tmp/{{ debian_cloudimage_filename }}
+        {{ proxmox_template_storage }} --format {{ debian_cloudimage_format }}
+      register: qmimportdisk
+      failed_when: "'Successfully imported disk' not in qmimportdisk.stdout"
+      changed_when: true
 
-- name: debian cloudimage template exists
-  community.general.proxmox_kvm:
-    api_host: "{{ proxmox_api_host }}"
-    api_user: "{{ proxmox_api_user }}"
-    api_token_id: "{{ proxmox_api_token_id }}"
-    api_token_secret: "{{ proxmox_api_token_secret }}"
-    node: "{{ proxmox_node }}"
-    name: "{{ proxmox_template_name }}"
-    template: true
-    ostype: l26
-    agent: true
-    boot: c
-    bootdisk: virtio0
-    scsihw: virtio-scsi-pci
-  register: create_vm
+    - name: attach the disk as scsi0
+      ansible.builtin.command: >-
+        qm set {{ debian_template_vmid }}
+        -scsi0 {{ qmimportdisk.stdout | regex_search("imported disk as 'unused\d+:([^']+)'", "\1") | first }}
+      register: qmset
+      changed_when: true
+    
+    - name: store debian_template_created=true
+      ansible.builtin.set_fact:
+        debian_template_created: true
 
-- name: download the image
-  import_tasks: download_image.yml
-  when: create_vm.changed
+  rescue:
+    - name: something failed, remove the vm that is left without a disk
+      ansible.builtin.command: >-
+        qm destroy {{ debian_template_vmid }} -destroy-unreferenced-disks 1
+      changed_when: true
 
-- name: import the image to the template
-  command: >-
-    qm importdisk {{ create_vm.vmid }}
-    {{ (proxmox_storage_info.proxmox_storages | selectattr('storage', 'equalto', proxmox_template_storage) | first).path }}/template/iso/{{ debian_cloudimage_filename }}.iso
-    {{ proxmox_template_storage }} --format {{ debian_cloudimage_format }}
-  when: create_vm.changed
+  always:
+    - name: clean up the temporary file
+      ansible.builtin.file:
+        path: "/tmp/{{ debian_cloudimage_filename }}"
+        state: absent
+      when: not debian_cloudimage_keep
 
-- name: get the vm config
-  community.general.proxmox:
-    api_host: "{{ proxmox_api_host }}"
-    api_user: "{{ proxmox_api_user }}"
-    api_token_id: "{{ proxmox_api_token_id }}"
-    api_token_secret: "{{ proxmox_api_token_secret }}"
-    node: "{{ proxmox_node }}"
-    vmid: "{{ create_vm.vmid }}"
-  when: create_vm.changed
+  when: not debian_template_existed
