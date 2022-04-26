@@ -1,7 +1,7 @@
-Role Name
+h3po.proxmox_debian_cloudimage
 =========
 
-This ansible role downloads a debian cloud image from https://cloud.debian.com and creates a proxmox template vm from it. It is meant to be run on the proxmox node that is going to store the vm; although we can do most things through the proxmox api it is currently not possible to attach the downloaded image to a vm without the local `qm importisk` shell command.
+This ansible role downloads a debian cloud image from https://cloud.debian.com and creates a proxmox template vm from it. It is meant to be run on the proxmox node that is going to store the vm; although we can do most things through the proxmox api it is currently not possible to attach the downloaded image to a vm without the local `qm importisk` command.
 
 Role Variables
 --------------
@@ -26,7 +26,9 @@ The role sets some facts that are useful for using the template afterwards
 * debian_template_vmid
 * debian_template_created
 
-```
+This runs in the context of the host `debian-bullseye-daily' that is yet to be created. We're using delegate_to for the pve host, which needs to be defined in the inventory. 
+
+```yaml
 ---
 - name: create a debian vm
   hosts: debian-bullseye-daily
@@ -35,7 +37,7 @@ The role sets some facts that are useful for using the template afterwards
   vars:
     # add the template to the "template" pool
     proxmox_template_pool: template
-    # migrate the template disk from qcow2 to zfs afterwards
+    # the storage needs to support .qcow2 files, we'll migrate the disk to zfs_volumes afterwards
     proxmox_template_storage: zfs_files
     # download the daily image instead of the default stable release
     debian_cloudimage_repo_subdir: bullseye/daily
@@ -50,12 +52,12 @@ The role sets some facts that are useful for using the template afterwards
       become: true
 
     - name: move the template to zfs storage
-      command: "qm move-disk {{ debian_template_vmid }} scsi0 rpool_volumes -delete 1"
+      command: "qm move-disk {{ debian_template_vmid }} scsi0 zfs_volumes -delete 1"
       delegate_to: "{{ proxmox_node }}"
       become: true
       when: debian_template_created
   
-    - name: now clone the vm some way or the other...s
+    - name: now clone the vm some way or the other...
       debug:
         msg: "the template vm has id {{ debian_template_vmid }}"
       when: debian_template_existed or debian_template_created
