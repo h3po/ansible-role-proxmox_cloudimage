@@ -36,9 +36,13 @@
   ansible.builtin.command: >-
     qm create {{ debian_template_vmid }}
     -name {{ debian_template_name }}
-    -template 1 -ostype l26 -agent 1 
-    -boot c -bootdisk scsi0 -scsihw virtio-scsi-pci
-    {{ "-pool %s" % proxmox_template_pool | default() }}
+    -template 1 -ostype l26 -agent 1
+    -scsihw virtio-scsi-pci
+    -boot c -bootdisk scsi0
+    -net0 virtio,bridge=vmbr0 -serial0 socket -vga serial0
+    -ide2 {{ proxmox_template_storage }}:cloudinit
+    -rng0 source=/dev/random
+    {{ "-pool %s" % proxmox_template_pool if proxmox_template_pool is defined else "" }}
   when: not debian_template_existed
 
 - name: get the checksum of the cloudimage file
