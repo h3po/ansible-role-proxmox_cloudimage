@@ -57,7 +57,12 @@
         checksum: "sha512:{{ debian_cloudimage_checksum }}"
         mode: 0644
 
-    - name: import the image to the template
+    - name: add qemu-guest-agent
+      ansible.builtin.command: virt-customize -a /tmp/{{ debian_cloudimage_filename }} --install qemu-guest-agent
+      changed_when: true
+      when: debian_cloudimage_qemuagent
+
+    - name: import the image to the template vm
       ansible.builtin.command: >-
         qm importdisk {{ debian_template_vmid }}
         /tmp/{{ debian_cloudimage_filename }}

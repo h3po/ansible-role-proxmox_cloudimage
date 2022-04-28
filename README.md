@@ -17,6 +17,7 @@ Role Variables
 | debian_cloudimage_release | latest | a specific version such as "20220328-962". the daily repository doesn't keep a very long history
 | debian_cloudimage_downloaddir | /tmp | directory to store the downloaded file
 | debian_cloudimage_keep | false | keep the file to avoid repeated downloads
+| debian_cloudimage_qemuagent | false | install qemu-guest-agent in the image. needs libguestfs-utils installed on the proxmox node
 
 Example Playbook
 ----------------
