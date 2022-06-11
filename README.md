@@ -6,7 +6,7 @@ This ansible role downloads a debian cloud image from https://cloud.debian.com a
 Role Variables
 --------------
 
-| variable | default value | description
+| variable | default value | description/alternatives
 | --- | --- | --- |
 | proxmox_template_pool | | target pool for the template vm
 | proxmox_template_storage | local | a storage pool that allows qcow2/raw image files
@@ -17,7 +17,7 @@ Role Variables
 | debian_cloudimage_release | latest | a specific version such as "20220328-962". the daily repository doesn't keep a very long history
 | debian_cloudimage_downloaddir | /tmp | directory to store the downloaded file
 | debian_cloudimage_keep | false | keep the file to avoid repeated downloads
-| debian_cloudimage_qemuagent | false | install qemu-guest-agent in the image. needs libguestfs-utils installed on the proxmox node
+| debian_cloudimage_qemuagent | false | install qemu-guest-agent in the image. needs libguestfs-tools installed on the proxmox node
 
 Example Playbook
 ----------------
