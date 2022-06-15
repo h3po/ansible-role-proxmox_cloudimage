@@ -8,16 +8,14 @@ Role Variables
 
 | variable | default value | description/alternatives
 | --- | --- | --- |
+| linux_cloudimage_distro | debian | distribution to install |
 | proxmox_template_pool | | target pool for the template vm
 | proxmox_template_storage | local | a storage pool that allows qcow2/raw image files
-| debian_cloudimage_repo_subdir | bullseye | bullseye/daily, buster, buster/daily, ...
-| debian_cloudimage_type | genericcloud-amd64 | generic-amd64 (has more drivers)
-| debian_cloudimage_format | qcow2 | raw (larger download, same endresult)
-| debian_cloudimage_repo_url | "https://cloud.debian.org/images/cloud/{{ debian_cloudimage_repo_subdir }}/" |
-| debian_cloudimage_release | latest | a specific version such as "20220328-962". the daily repository doesn't keep a very long history
-| debian_cloudimage_downloaddir | /tmp | directory to store the downloaded file
-| debian_cloudimage_keep | false | keep the file to avoid repeated downloads
-| debian_cloudimage_qemuagent | false | install qemu-guest-agent in the image. needs libguestfs-tools installed on the proxmox node
+| linux_cloudimage_repo_subdir | bullseye | bullseye/daily, buster, buster/daily, ...
+| linux_cloudimage_release | latest | a specific version such as "20220328-962". the daily repository doesn't keep a very long history
+| linux_cloudimage_downloaddir | /tmp | directory to store the downloaded file
+| linux_cloudimage_keep | false | keep the file to avoid repeated downloads
+| linux_cloudimage_qemuagent | false | install qemu-guest-agent in the image. needs libguestfs-tools installed on the proxmox node
 
 Example Playbook
 ----------------
@@ -41,7 +39,7 @@ This runs in the context of the host `debian-bullseye-daily' that is yet to be c
     # the storage needs to support .qcow2 files, we'll migrate the disk to zfs_volumes afterwards
     proxmox_template_storage: zfs_files
     # download the daily image instead of the default stable release
-    debian_cloudimage_repo_subdir: bullseye/daily
+    linux_cloudimage_repo_subdir: bullseye/daily
     # create the template on this host from the inventory
     proxmox_node: pve
   tasks:
