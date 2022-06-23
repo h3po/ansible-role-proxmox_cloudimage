@@ -16,6 +16,11 @@
   ansible.builtin.set_fact:
     linux_template_name: "{{ linux_cloudimage_filename.rsplit('.', 1)[0] }}"
 
+- name: append releasedate to templatename
+  ansible.builtin.set_fact:
+    linux_template_name: "{{ linux_template_name +'-'+ linux_cloudimage_release }}"
+  when: linux_cloudimage_distro == "ubuntu"
+
 - name: get list of vms
   ansible.builtin.command: qm list
   changed_when: false

@@ -1,5 +1,5 @@
 ---
-- name: get cloudimage filename
+- name: get cloudimage filename (debian)
   block:
   - name: get cloud image versions
     ansible.builtin.uri:
@@ -22,7 +22,7 @@
       return_content: true
     register: linux_cloudimage_images_page
 
-  - name: set cloudimage filename (debian)
+  - name: set cloudimage filename
     ansible.builtin.set_fact:
       linux_cloudimage_filename: >-
         {{ linux_cloudimage_images_page.content.split('\n') |
@@ -31,9 +31,25 @@
         | select() | first | first }}
   when: linux_cloudimage_distro == "debian"
 
-- name: set cloudimage filename (ubuntu)
-  ansible.builtin.set_fact:
-    linux_cloudimage_filename: "{{ linux_cloudimage_repo_subdir +'-'+ linux_cloudimage_type +'.'+ linux_cloudimage_format }}"
+- name: get cloudimage filename (ubuntu)
+  block:
+  - name: set cloudimage filename
+    ansible.builtin.set_fact:
+      linux_cloudimage_filename: "{{ linux_cloudimage_repo_subdir +'-'+ linux_cloudimage_type +'.'+ linux_cloudimage_format }}"
+
+  - name: get cloudimage releasedate
+    ansible.builtin.uri:
+      url: "{{ linux_cloudimage_repo_url }}"
+      return_content: true
+    register: linux_cloudimage_versions_page
+    when: linux_cloudimage_release == "current"
+
+  - name: parse latest ubuntu cloud image version
+    ansible.builtin.set_fact:
+      linux_cloudimage_release: >-
+        {{ linux_cloudimage_versions_page.content.split('<a href') |
+        map('regex_search', '^=\"(\d{8})/\">', '\1')  |
+        select() | map('first') | list | last }}
   when: linux_cloudimage_distro == "ubuntu"
 
 - name: construct cloudimage url
