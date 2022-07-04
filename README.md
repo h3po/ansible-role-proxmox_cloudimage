@@ -18,6 +18,7 @@ Role Variables
 | debian_cloudimage_downloaddir | /tmp | directory to store the downloaded file
 | debian_cloudimage_keep | false | keep the file to avoid repeated downloads
 | debian_cloudimage_qemuagent | false | install qemu-guest-agent in the image. needs libguestfs-tools installed on the proxmox node
+| debian_cloudimage_diskparams | cache=writeback,discard=on | optimal settings for thin provisioned zfs
 
 Example Playbook
 ----------------

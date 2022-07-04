@@ -8,3 +8,4 @@ debian_cloudimage_release: latest
 debian_cloudimage_downloaddir: /tmp
 debian_cloudimage_keep: false
 debian_cloudimage_qemuagent: false
+debian_cloudimage_diskparams: cache=writeback,discard=on

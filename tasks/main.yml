@@ -38,11 +38,11 @@
     -name {{ debian_template_name }}
     -template 1 -ostype l26 -agent 1
     -scsihw virtio-scsi-pci
-    -boot c -bootdisk scsi0
+    -boot c -bootdisk virtio0
     -net0 virtio,bridge=vmbr0 -serial0 socket -vga serial0
     -ide2 {{ proxmox_template_storage }}:cloudinit
     -rng0 source=/dev/random
-    {{ "-pool %s" % proxmox_template_pool if proxmox_template_pool is defined else "" }}
+    {{ "-pool %s" % proxmox_template_pool if proxmox_template_pool is defined }}
   when: not debian_template_existed
 
 - name: get the checksum of the cloudimage file
@@ -71,10 +71,10 @@
       failed_when: "'Successfully imported disk' not in qmimportdisk.stdout"
       changed_when: true
 
-    - name: attach the disk as scsi0
+    - name: attach the disk as virtio0
       ansible.builtin.command: >-
         qm set {{ debian_template_vmid }}
-        -scsi0 {{ qmimportdisk.stdout | regex_search("imported disk as 'unused\d+:([^']+)'", "\1") | first }}
+        -virtio0 {{ qmimportdisk.stdout | regex_search("imported disk as 'unused\d+:([^']+)'", "\1") | first }},{{ ",%s" % debian_cloudimage_diskparams if debian_cloudimage_diskparams is defined }}
       register: qmset
       changed_when: true
     
