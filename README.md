@@ -1,7 +1,7 @@
-h3po.proxmox_debian_cloudimage
+h3po.proxmox_cloudimage
 =========
 
-This ansible role downloads a debian cloud image from https://cloud.debian.com and creates a proxmox template vm from it. It is meant to be run on the proxmox node that is going to store the vm; although we can do most things through the proxmox api it is currently not possible to attach the downloaded image to a vm without the local `qm importisk` command.
+This ansible role downloads for example a debian cloud image from https://cloud.debian.com and creates a proxmox template vm from it. It is meant to be run on the proxmox node that is going to store the vm; although we can do most things through the proxmox api it is currently not possible to attach the downloaded image to a vm without the local `qm importisk` command.
 
 Role Variables
 --------------
@@ -46,7 +46,7 @@ This runs in the context of the host `debian-bullseye-daily' that is yet to be c
 
     - name: create the debian template
       import_role:
-        name: h3po.proxmox_debian_cloudimage
+        name: h3po.proxmox_cloudimage
       delegate_to: "{{ proxmox_node }}"
       become: true
 
