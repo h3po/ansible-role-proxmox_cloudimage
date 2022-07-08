@@ -50,6 +50,7 @@
         {{ linux_cloudimage_versions_page.content.split('<a href') |
         map('regex_search', '^=\"(\d{8})/\">', '\1')  |
         select() | map('first') | list | last }}
+    when: linux_cloudimage_release == "current"
   when: linux_cloudimage_distro == "ubuntu"
 
 - name: construct cloudimage url

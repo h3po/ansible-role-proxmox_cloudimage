@@ -1,8 +1,6 @@
 ---
 linux_cloudimage_distro: debian
 proxmox_template_storage: local
-linux_cloudimage_repo_subdir: bullseye
-linux_cloudimage_release: latest
 linux_cloudimage_downloaddir: /tmp
 linux_cloudimage_keep: false
 linux_cloudimage_qemuagent: false

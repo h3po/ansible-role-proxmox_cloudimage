@@ -115,7 +115,7 @@
 
     - name: attach the disk as virtio0
       ansible.builtin.command: >-
-        qm set {{ debian_template_vmid }}
+        qm set {{ linux_template_vmid }}
         -virtio0 {{ qmimportdisk.stdout | regex_search("imported disk as 'unused\d+:([^']+)'", "\1") | first }},{{ ",%s" % debian_cloudimage_diskparams if debian_cloudimage_diskparams is defined }}
       register: qmset
       changed_when: true
