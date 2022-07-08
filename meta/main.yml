@@ -1,8 +1,8 @@
 ---
 galaxy_info:
-  role_name: proxmox_debian_cloudimage
+  role_name: proxmox_cloudimage
   author: h3po
-  description: This ansible role downloads a debian cloud image from https://cloud.debian.com or an ubuntu cloudimage from https://cloud-images.ubuntu.com/ and creates a proxmox template vm from it
+  description: This ansible role downloads various linux cloud images and creates a proxmox template vm from it
   license: GPL-3.0-only
   min_ansible_version: "2.1"
   platforms:
