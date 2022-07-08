@@ -4,11 +4,6 @@
     dir: vars
     files_matching: "{{ linux_cloudimage_distro +'.yml' }}"
     
-- name: check linux_cloudimage_release and linux_cloudimage_distro
-  set_fact:
-    linux_cloudimage_release: current
-  when: linux_cloudimage_distro == "ubuntu" and linux_cloudimage_release == "latest"
-
 - name: get the name and url of the cloudimage file
   import_tasks: linux_cloudimage_url.yml
 
