@@ -1,11 +1,9 @@
 ---
+linux_cloudimage_distro: debian
 proxmox_template_storage: local
-debian_cloudimage_repo_subdir: bullseye
-debian_cloudimage_type: genericcloud-amd64
-debian_cloudimage_format: qcow2
-debian_cloudimage_repo_url: "https://cloud.debian.org/images/cloud/{{ debian_cloudimage_repo_subdir }}/"
-debian_cloudimage_release: latest
-debian_cloudimage_downloaddir: /tmp
-debian_cloudimage_keep: false
-debian_cloudimage_qemuagent: false
+linux_cloudimage_repo_subdir: bullseye
+linux_cloudimage_release: latest
+linux_cloudimage_downloaddir: /tmp
+linux_cloudimage_keep: false
+linux_cloudimage_qemuagent: false
 debian_cloudimage_diskparams: cache=writeback,discard=on

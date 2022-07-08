@@ -1,10 +1,20 @@
 ---
-- name: get the name and url of the debian cloudimage file
-  import_tasks: debian_cloudimage_url.yml
+- name: import distro specific vars
+  include_vars:
+    dir: vars
+    files_matching: "{{ linux_cloudimage_distro +'.yml' }}"
+    
+- name: get the name and url of the cloudimage file
+  import_tasks: linux_cloudimage_url.yml
 
 - name: remove the extension from the image filename to get the vm name
   ansible.builtin.set_fact:
-    debian_template_name: "{{ debian_cloudimage_filename.rsplit('.', 1)[0] }}"
+    linux_template_name: "{{ linux_cloudimage_filename.rsplit('.', 1)[0] }}"
+
+- name: append releasedate to templatename
+  ansible.builtin.set_fact:
+    linux_template_name: "{{ linux_template_name +'-'+ linux_cloudimage_release }}"
+  when: linux_cloudimage_distro == "ubuntu"
 
 - name: get list of vms
   ansible.builtin.command: qm list
@@ -13,29 +23,29 @@
 
 - name: check if vm exists and get its vmid
   ansible.builtin.set_fact:
-    debian_template_existed: "{{ debian_template_name in qmlist.stdout }}"
-    debian_template_created: false
+    linux_template_existed: "{{ linux_template_name in qmlist.stdout }}"
+    linux_template_created: false
 
 - name: store vmid of the existing vm
   ansible.builtin.set_fact:
-    debian_template_vmid: "{{ qmlist.stdout | regex_search('(\\d+) %s' % debian_template_name, '\\1') | first }}"
-  when: debian_template_existed
+    linux_template_vmid: "{{ qmlist.stdout | regex_search('(\\d+) %s' % linux_template_name, '\\1') | first }}"
+  when: linux_template_existed
 
 - name: get the next free vmid
   ansible.builtin.command: pvesh get /cluster/nextid
   changed_when: false
   register: nextid
-  when: not debian_template_existed
+  when: not linux_template_existed
 
 - name: store vmid of the new vm
   ansible.builtin.set_fact:
-    debian_template_vmid: "{{ nextid.stdout }}"
-  when: not debian_template_existed
+    linux_template_vmid: "{{ nextid.stdout }}"
+  when: not linux_template_existed
 
 - name: create the template vm
   ansible.builtin.command: >-
-    qm create {{ debian_template_vmid }}
-    -name {{ debian_template_name }}
+    qm create {{ linux_template_vmid }}
+    -name {{ linux_template_name }}
     -template 1 -ostype l26 -agent 1
     -scsihw virtio-scsi-pci
     -boot c -bootdisk virtio0
@@ -43,30 +53,44 @@
     -ide2 {{ proxmox_template_storage }}:cloudinit
     -rng0 source=/dev/random
     {{ "-pool %s" % proxmox_template_pool if proxmox_template_pool is defined }}
-  when: not debian_template_existed
+  when: not linux_template_existed
 
 - name: get the checksum of the cloudimage file
-  import_tasks: debian_cloudimage_checksum.yml
-  when: not debian_template_existed
+  import_tasks: linux_cloudimage_checksum.yml
+  when: not linux_template_existed
 
 - block:
     - name: download the image
       ansible.builtin.get_url:
-        url: "{{ debian_cloudimage_url }}"
-        dest: "/tmp/{{ debian_cloudimage_filename }}"
-        checksum: "sha512:{{ debian_cloudimage_checksum }}"
+        url: "{{ linux_cloudimage_url }}"
+        dest: "/tmp/{{ linux_cloudimage_filename }}"
+        checksum: "{{ linux_cloudimage_hashtype }}:{{ linux_cloudimage_checksum }}"
         mode: 0644
+    - block:
+      - name: install libguestfs-tools
+        ansible.builtin.apt:
+          name: libguestfs-tools
+          state: present
+      - name: add qemu-guest-agent
+        ansible.builtin.command: virt-customize -a /tmp/{{ linux_cloudimage_filename }} --install qemu-guest-agent
+        changed_when: true
+      when: linux_cloudimage_qemuagent
 
-    - name: add qemu-guest-agent
-      ansible.builtin.command: virt-customize -a /tmp/{{ debian_cloudimage_filename }} --install qemu-guest-agent
-      changed_when: true
-      when: debian_cloudimage_qemuagent
+    - name: set import facts
+      ansible.builtin.set_fact:
+        linux_cloudimage_import_args: --format {{ linux_cloudimage_format }}
+      when: linux_cloudimage_format in ['raw', 'qcow2', 'vmdk']
+
+    - name: set import facts
+      ansible.builtin.set_fact:
+        linux_cloudimage_import_args: ""
+      when: not linux_cloudimage_format in ['raw', 'qcow2', 'vmdk']
 
     - name: import the image to the template vm
       ansible.builtin.command: >-
-        qm importdisk {{ debian_template_vmid }}
-        /tmp/{{ debian_cloudimage_filename }}
-        {{ proxmox_template_storage }} --format {{ debian_cloudimage_format }}
+        qm importdisk {{ linux_template_vmid }}
+        /tmp/{{ linux_cloudimage_filename }}
+        {{ proxmox_template_storage }} {{ linux_cloudimage_import_args }}
       register: qmimportdisk
       failed_when: "'Successfully imported disk' not in qmimportdisk.stdout"
       changed_when: true
@@ -78,21 +102,21 @@
       register: qmset
       changed_when: true
     
-    - name: store debian_template_created=true
+    - name: store linux_template_created=true
       ansible.builtin.set_fact:
-        debian_template_created: true
+        linux_template_created: true
 
   rescue:
     - name: something failed, remove the vm that is left without a disk
       ansible.builtin.command: >-
-        qm destroy {{ debian_template_vmid }} -destroy-unreferenced-disks 1
+        qm destroy {{ linux_template_vmid }} -destroy-unreferenced-disks 1
       changed_when: true
 
   always:
     - name: clean up the temporary file
       ansible.builtin.file:
-        path: "/tmp/{{ debian_cloudimage_filename }}"
+        path: "/tmp/{{ linux_cloudimage_filename }}"
         state: absent
-      when: not debian_cloudimage_keep
+      when: not linux_cloudimage_keep
 
-  when: not debian_template_existed
+  when: not linux_template_existed

@@ -1,0 +1,7 @@
+---
+linux_cloudimage_release: latest
+linux_cloudimage_hashtype: sha512
+linux_cloudimage_type: genericcloud-amd64
+linux_cloudimage_format: qcow2
+linux_cloudimage_repo_subdir: bullseye
+linux_cloudimage_repo_url: "https://cloud.debian.org/images/cloud/{{ linux_cloudimage_repo_subdir }}/"
