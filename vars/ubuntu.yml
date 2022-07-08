@@ -1,7 +1,7 @@
 ---
-linux_cloudimage_release: current
-linux_cloudimage_hashtype: sha256
-linux_cloudimage_type: server-cloudimg-amd64
-linux_cloudimage_format: img
-linux_cloudimage_repo_subdir: kinetic
-linux_cloudimage_repo_url: "https://cloud-images.ubuntu.com/{{ linux_cloudimage_repo_subdir }}/"
+default_linux_cloudimage_release: current
+default_linux_cloudimage_repo_subdir: kinetic
+default_linux_cloudimage_hashtype: sha256
+default_linux_cloudimage_type: server-cloudimg-amd64
+default_linux_cloudimage_format: img
+default_linux_cloudimage_repo_url: "https://cloud-images.ubuntu.com/{{ default_linux_cloudimage_repo_subdir }}/"

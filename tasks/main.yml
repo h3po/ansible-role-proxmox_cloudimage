@@ -3,7 +3,25 @@
   include_vars:
     dir: vars
     files_matching: "{{ linux_cloudimage_distro +'.yml' }}"
-    
+
+- name: assign default values
+  ansible.builtin.set_fact:
+    linux_cloudimage_release: "{{ linux_cloudimage_release | default(default_linux_cloudimage_release) }}"
+    linux_cloudimage_repo_subdir: "{{ linux_cloudimage_repo_subdir | default(default_linux_cloudimage_repo_subdir) }}"
+    linux_cloudimage_hashtype: "{{ linux_cloudimage_hashtype | default(default_linux_cloudimage_hashtype) }}"
+    linux_cloudimage_type: "{{ linux_cloudimage_type | default(default_linux_cloudimage_type) }}"
+    linux_cloudimage_format: "{{ linux_cloudimage_format | default(default_linux_cloudimage_format) }}"
+    linux_cloudimage_repo_url: "{{ linux_cloudimage_repo_url | default(default_linux_cloudimage_repo_url) }}"
+
+- debug:
+    msg:
+      linux_cloudimage_release: "{{ linux_cloudimage_release }}"
+      linux_cloudimage_repo_subdir: "{{ linux_cloudimage_repo_subdir }}"
+      linux_cloudimage_hashtype: "{{ linux_cloudimage_hashtype }}"
+      linux_cloudimage_type: "{{ linux_cloudimage_type }}"
+      linux_cloudimage_format: "{{ linux_cloudimage_format }}"
+      linux_cloudimage_repo_url: "{{ linux_cloudimage_repo_url }}"
+
 - name: get the name and url of the cloudimage file
   import_tasks: linux_cloudimage_url.yml
 
