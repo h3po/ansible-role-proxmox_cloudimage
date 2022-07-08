@@ -1,0 +1,59 @@
+---
+- name: get cloudimage filename (debian)
+  block:
+  - name: get cloud image versions
+    ansible.builtin.uri:
+      url: "{{ proxmox_cloudimage_repo_url }}"
+      return_content: true
+    register: proxmox_cloudimage_versions_page
+    when: proxmox_cloudimage_release == "latest"
+
+  - name: parse latest cloud image version
+    ansible.builtin.set_fact:
+      proxmox_cloudimage_release: >-
+        {{ proxmox_cloudimage_versions_page.content.split('</tr>') |
+        map('regex_search', '<a href="(\d{8}-\d+)/">', '\1') |
+        select() | map('first') | list | last }}
+    when: proxmox_cloudimage_release == "latest"
+
+  - name: get cloud image urls
+    ansible.builtin.uri:
+      url: "{{ proxmox_cloudimage_repo_url }}{{ proxmox_cloudimage_release }}/"
+      return_content: true
+    register: proxmox_cloudimage_images_page
+
+  - name: set cloudimage filename
+    ansible.builtin.set_fact:
+      proxmox_cloudimage_filename: >-
+        {{ proxmox_cloudimage_images_page.content.split('\n') |
+        map('regex_search', '<a href="([^\"]*-%s-(daily-)?%s.%s)">' %
+          (proxmox_cloudimage_type, proxmox_cloudimage_release, proxmox_cloudimage_format), '\1')
+        | select() | first | first }}
+  when: proxmox_cloudimage_distro == "debian"
+
+- name: get cloudimage filename (ubuntu)
+  block:
+  - name: set cloudimage filename
+    ansible.builtin.set_fact:
+      proxmox_cloudimage_filename: "{{ proxmox_cloudimage_repo_subdir +'-'+ proxmox_cloudimage_type +'.'+ proxmox_cloudimage_format }}"
+
+  - name: get cloudimage releasedate
+    ansible.builtin.uri:
+      url: "{{ proxmox_cloudimage_repo_url }}"
+      return_content: true
+    register: proxmox_cloudimage_versions_page
+    when: proxmox_cloudimage_release == "current"
+
+  - name: parse latest ubuntu cloud image version
+    ansible.builtin.set_fact:
+      proxmox_cloudimage_release: >-
+        {{ proxmox_cloudimage_versions_page.content.split('<a href') |
+        map('regex_search', '^=\"(\d{8})/\">', '\1')  |
+        select() | map('first') | list | last }}
+    when: proxmox_cloudimage_release == "current"
+  when: proxmox_cloudimage_distro == "ubuntu"
+
+- name: construct cloudimage url
+  ansible.builtin.set_fact:
+    proxmox_cloudimage_url: >-
+      {{ proxmox_cloudimage_repo_url }}{{ proxmox_cloudimage_release }}/{{ proxmox_cloudimage_filename }}

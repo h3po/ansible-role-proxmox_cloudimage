@@ -10,20 +10,20 @@ Role Variables
 | --- | --- | --- |
 | proxmox_template_pool | | target pool for the template vm
 | proxmox_template_storage | local | a storage pool that allows qcow2/raw image files
-| linux_cloudimage_distro | debian | ubuntu |
-| linux_cloudimage_repo_subdir | bullseye | bullseye/daily, buster, buster/daily, ...
-| linux_cloudimage_release | latest | a specific version such as "20220328-962". the daily repository doesn't keep a very long history
-| linux_cloudimage_downloaddir | /tmp | directory to store the downloaded file
-| linux_cloudimage_keep | false | keep the file to avoid repeated downloads
-| linux_cloudimage_qemuagent | false | install qemu-guest-agent in the image. needs libguestfs-tools installed on the proxmox node
-| debian_cloudimage_diskparams | cache=writeback,discard=on | optimal settings for thin provisioned zfs
+| proxmox_cloudimage_distro | debian | ubuntu |
+| proxmox_cloudimage_repo_subdir | bullseye | bullseye/daily, buster, buster/daily, ...
+| proxmox_cloudimage_release | latest | a specific version such as "20220328-962". the daily repository doesn't keep a very long history
+| proxmox_cloudimage_downloaddir | /tmp | directory to store the downloaded file
+| proxmox_cloudimage_keep | false | keep the file to avoid repeated downloads
+| proxmox_cloudimage_qemuagent | false | install qemu-guest-agent in the image. needs libguestfs-tools installed on the proxmox node
+| proxmox_cloudimage_diskparams | cache=writeback,discard=on | optimal settings for thin provisioned zfs
 Example Playbook
 ----------------
 
 The role sets some facts that are useful for using the template afterwards
-* debian_template_name
-* debian_template_vmid
-* debian_template_created
+* proxmox_cloudimage_template_name
+* proxmox_cloudimage_template_vmid
+* proxmox_cloudimage_template_created
 
 This runs in the context of the host `debian-bullseye-daily' that is yet to be created. We're using delegate_to for the pve host, which needs to be defined in the inventory. 
 
@@ -39,7 +39,7 @@ This runs in the context of the host `debian-bullseye-daily' that is yet to be c
     # the storage needs to support .qcow2 files, we'll migrate the disk to zfs_volumes afterwards
     proxmox_template_storage: zfs_files
     # download the daily image instead of the default stable release
-    linux_cloudimage_repo_subdir: bullseye/daily
+    proxmox_cloudimage_repo_subdir: bullseye/daily
     # create the template on this host from the inventory
     proxmox_node: pve
   tasks:
@@ -51,15 +51,15 @@ This runs in the context of the host `debian-bullseye-daily' that is yet to be c
       become: true
 
     - name: move the template to zfs storage
-      command: "qm move-disk {{ debian_template_vmid }} scsi0 zfs_volumes -delete 1"
+      command: "qm move-disk {{ proxmox_cloudimage_template_vmid }} scsi0 zfs_volumes -delete 1"
       delegate_to: "{{ proxmox_node }}"
       become: true
-      when: debian_template_created
+      when: proxmox_cloudimage_template_created
   
     - name: now clone the vm some way or the other...
       debug:
-        msg: "the template vm has id {{ debian_template_vmid }}"
-      when: debian_template_existed or debian_template_created
+        msg: "the template vm has id {{ proxmox_cloudimage_template_vmid }}"
+      when: proxmox_cloudimage_template_existed or proxmox_cloudimage_template_created
 ```
 
 License

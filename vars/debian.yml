@@ -1,7 +1,7 @@
 ---
-default_linux_cloudimage_release: latest
-default_linux_cloudimage_repo_subdir: bullseye
-default_linux_cloudimage_hashtype: sha512
-default_linux_cloudimage_type: genericcloud-amd64
-default_linux_cloudimage_format: qcow2
-default_linux_cloudimage_repo_url: "https://cloud.debian.org/images/cloud/{{ default_linux_cloudimage_repo_subdir }}/"
+default_proxmox_cloudimage_release: latest
+default_proxmox_cloudimage_repo_subdir: bullseye
+default_proxmox_cloudimage_hashtype: sha512
+default_proxmox_cloudimage_type: genericcloud-amd64
+default_proxmox_cloudimage_format: qcow2
+default_proxmox_cloudimage_repo_url: "https://cloud.debian.org/images/cloud/{{ default_proxmox_cloudimage_repo_subdir }}/"

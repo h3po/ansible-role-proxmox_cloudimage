@@ -2,37 +2,28 @@
 - name: import distro specific vars
   include_vars:
     dir: vars
-    files_matching: "{{ linux_cloudimage_distro +'.yml' }}"
+    files_matching: "{{ proxmox_cloudimage_distro +'.yml' }}"
 
 - name: assign default values
   ansible.builtin.set_fact:
-    linux_cloudimage_release: "{{ linux_cloudimage_release | default(default_linux_cloudimage_release) }}"
-    linux_cloudimage_repo_subdir: "{{ linux_cloudimage_repo_subdir | default(default_linux_cloudimage_repo_subdir) }}"
-    linux_cloudimage_hashtype: "{{ linux_cloudimage_hashtype | default(default_linux_cloudimage_hashtype) }}"
-    linux_cloudimage_type: "{{ linux_cloudimage_type | default(default_linux_cloudimage_type) }}"
-    linux_cloudimage_format: "{{ linux_cloudimage_format | default(default_linux_cloudimage_format) }}"
-    linux_cloudimage_repo_url: "{{ linux_cloudimage_repo_url | default(default_linux_cloudimage_repo_url) }}"
-
-- debug:
-    msg:
-      linux_cloudimage_release: "{{ linux_cloudimage_release }}"
-      linux_cloudimage_repo_subdir: "{{ linux_cloudimage_repo_subdir }}"
-      linux_cloudimage_hashtype: "{{ linux_cloudimage_hashtype }}"
-      linux_cloudimage_type: "{{ linux_cloudimage_type }}"
-      linux_cloudimage_format: "{{ linux_cloudimage_format }}"
-      linux_cloudimage_repo_url: "{{ linux_cloudimage_repo_url }}"
+    proxmox_cloudimage_release: "{{ proxmox_cloudimage_release | default(default_proxmox_cloudimage_release) }}"
+    proxmox_cloudimage_repo_subdir: "{{ proxmox_cloudimage_repo_subdir | default(default_proxmox_cloudimage_repo_subdir) }}"
+    proxmox_cloudimage_hashtype: "{{ proxmox_cloudimage_hashtype | default(default_proxmox_cloudimage_hashtype) }}"
+    proxmox_cloudimage_type: "{{ proxmox_cloudimage_type | default(default_proxmox_cloudimage_type) }}"
+    proxmox_cloudimage_format: "{{ proxmox_cloudimage_format | default(default_proxmox_cloudimage_format) }}"
+    proxmox_cloudimage_repo_url: "{{ proxmox_cloudimage_repo_url | default(default_proxmox_cloudimage_repo_url) }}"
 
 - name: get the name and url of the cloudimage file
-  import_tasks: linux_cloudimage_url.yml
+  import_tasks: proxmox_cloudimage_url.yml
 
 - name: remove the extension from the image filename to get the vm name
   ansible.builtin.set_fact:
-    linux_template_name: "{{ linux_cloudimage_filename.rsplit('.', 1)[0] }}"
+    proxmox_cloudimage_template_name: "{{ proxmox_cloudimage_filename.rsplit('.', 1)[0] }}"
 
 - name: append releasedate to templatename
   ansible.builtin.set_fact:
-    linux_template_name: "{{ linux_template_name +'-'+ linux_cloudimage_release }}"
-  when: linux_cloudimage_distro == "ubuntu"
+    proxmox_cloudimage_template_name: "{{ proxmox_cloudimage_template_name +'-'+ proxmox_cloudimage_release }}"
+  when: proxmox_cloudimage_distro == "ubuntu"
 
 - name: get list of vms
   ansible.builtin.command: qm list
@@ -41,29 +32,29 @@
 
 - name: check if vm exists and get its vmid
   ansible.builtin.set_fact:
-    linux_template_existed: "{{ linux_template_name in qmlist.stdout }}"
-    linux_template_created: false
+    proxmox_cloudimage_template_existed: "{{ proxmox_cloudimage_template_name in qmlist.stdout }}"
+    proxmox_cloudimage_template_created: false
 
 - name: store vmid of the existing vm
   ansible.builtin.set_fact:
-    linux_template_vmid: "{{ qmlist.stdout | regex_search('(\\d+) %s' % linux_template_name, '\\1') | first }}"
-  when: linux_template_existed
+    proxmox_cloudimage_template_vmid: "{{ qmlist.stdout | regex_search('(\\d+) %s' % proxmox_cloudimage_template_name, '\\1') | first }}"
+  when: proxmox_cloudimage_template_existed
 
 - name: get the next free vmid
   ansible.builtin.command: pvesh get /cluster/nextid
   changed_when: false
   register: nextid
-  when: not linux_template_existed
+  when: not proxmox_cloudimage_template_existed
 
 - name: store vmid of the new vm
   ansible.builtin.set_fact:
-    linux_template_vmid: "{{ nextid.stdout }}"
-  when: not linux_template_existed
+    proxmox_cloudimage_template_vmid: "{{ nextid.stdout }}"
+  when: not proxmox_cloudimage_template_existed
 
 - name: create the template vm
   ansible.builtin.command: >-
-    qm create {{ linux_template_vmid }}
-    -name {{ linux_template_name }}
+    qm create {{ proxmox_cloudimage_template_vmid }}
+    -name {{ proxmox_cloudimage_template_name }}
     -template 1 -ostype l26 -agent 1
     -scsihw virtio-scsi-pci
     -boot c -bootdisk virtio0
@@ -71,18 +62,18 @@
     -ide2 {{ proxmox_template_storage }}:cloudinit
     -rng0 source=/dev/random
     {{ "-pool %s" % proxmox_template_pool if proxmox_template_pool is defined }}
-  when: not linux_template_existed
+  when: not proxmox_cloudimage_template_existed
 
 - name: get the checksum of the cloudimage file
-  import_tasks: linux_cloudimage_checksum.yml
-  when: not linux_template_existed
+  import_tasks: proxmox_cloudimage_checksum.yml
+  when: not proxmox_cloudimage_template_existed
 
 - block:
     - name: download the image
       ansible.builtin.get_url:
-        url: "{{ linux_cloudimage_url }}"
-        dest: "/tmp/{{ linux_cloudimage_filename }}"
-        checksum: "{{ linux_cloudimage_hashtype }}:{{ linux_cloudimage_checksum }}"
+        url: "{{ proxmox_cloudimage_url }}"
+        dest: "/tmp/{{ proxmox_cloudimage_filename }}"
+        checksum: "{{ proxmox_cloudimage_hashtype }}:{{ proxmox_cloudimage_checksum }}"
         mode: 0644
     - block:
       - name: install libguestfs-tools
@@ -90,51 +81,51 @@
           name: libguestfs-tools
           state: present
       - name: add qemu-guest-agent
-        ansible.builtin.command: virt-customize -a /tmp/{{ linux_cloudimage_filename }} --install qemu-guest-agent
+        ansible.builtin.command: virt-customize -a /tmp/{{ proxmox_cloudimage_filename }} --install qemu-guest-agent
         changed_when: true
-      when: linux_cloudimage_qemuagent
+      when: proxmox_cloudimage_qemuagent
 
     - name: set import facts
       ansible.builtin.set_fact:
-        linux_cloudimage_import_args: --format {{ linux_cloudimage_format }}
-      when: linux_cloudimage_format in ['raw', 'qcow2', 'vmdk']
+        proxmox_cloudimage_import_args: --format {{ proxmox_cloudimage_format }}
+      when: proxmox_cloudimage_format in ['raw', 'qcow2', 'vmdk']
 
     - name: set import facts
       ansible.builtin.set_fact:
-        linux_cloudimage_import_args: ""
-      when: not linux_cloudimage_format in ['raw', 'qcow2', 'vmdk']
+        proxmox_cloudimage_import_args: ""
+      when: not proxmox_cloudimage_format in ['raw', 'qcow2', 'vmdk']
 
     - name: import the image to the template vm
       ansible.builtin.command: >-
-        qm importdisk {{ linux_template_vmid }}
-        /tmp/{{ linux_cloudimage_filename }}
-        {{ proxmox_template_storage }} {{ linux_cloudimage_import_args }}
+        qm importdisk {{ proxmox_cloudimage_template_vmid }}
+        /tmp/{{ proxmox_cloudimage_filename }}
+        {{ proxmox_template_storage }} {{ proxmox_cloudimage_import_args }}
       register: qmimportdisk
       failed_when: "'Successfully imported disk' not in qmimportdisk.stdout"
       changed_when: true
 
     - name: attach the disk as virtio0
       ansible.builtin.command: >-
-        qm set {{ linux_template_vmid }}
-        -virtio0 {{ qmimportdisk.stdout | regex_search("imported disk as 'unused\d+:([^']+)'", "\1") | first }},{{ ",%s" % debian_cloudimage_diskparams if debian_cloudimage_diskparams is defined }}
+        qm set {{ proxmox_cloudimage_template_vmid }}
+        -virtio0 {{ qmimportdisk.stdout | regex_search("imported disk as 'unused\d+:([^']+)'", "\1") | first }},{{ ",%s" % proxmox_cloudimage_diskparams if proxmox_cloudimage_diskparams is defined }}
       register: qmset
       changed_when: true
     
-    - name: store linux_template_created=true
+    - name: store proxmox_cloudimage_template_created=true
       ansible.builtin.set_fact:
-        linux_template_created: true
+        proxmox_cloudimage_template_created: true
 
   rescue:
     - name: something failed, remove the vm that is left without a disk
       ansible.builtin.command: >-
-        qm destroy {{ linux_template_vmid }} -destroy-unreferenced-disks 1
+        qm destroy {{ proxmox_cloudimage_template_vmid }} -destroy-unreferenced-disks 1
       changed_when: true
 
   always:
     - name: clean up the temporary file
       ansible.builtin.file:
-        path: "/tmp/{{ linux_cloudimage_filename }}"
+        path: "/tmp/{{ proxmox_cloudimage_filename }}"
         state: absent
-      when: not linux_cloudimage_keep
+      when: not proxmox_cloudimage_keep
 
-  when: not linux_template_existed
+  when: not proxmox_cloudimage_template_existed
