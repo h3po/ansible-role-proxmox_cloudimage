@@ -1,5 +1,7 @@
 ---
-- hosts: localhost
+- hosts: templates
   remote_user: root
-  roles:
-    - proxmox_debian_cloudimage
+  tasks:
+    import_role:
+      name: h3po.proxmox_cloudimage
+    delegate_to: localhost

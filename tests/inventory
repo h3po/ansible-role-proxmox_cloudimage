@@ -1,2 +1,6 @@
 localhost
 
+[templates]
+debian-cloudimage-test-latest proxmox_cloudimage_distro=debian
+ubuntu-cloudimage-test-latest proxmox_cloudimage_distro=ubuntu
+centos-stream-9-cloudimage-test-latest proxmox_cloudimage_distro=centos-stream
