@@ -20,6 +20,10 @@
   ansible.builtin.set_fact:
     proxmox_cloudimage_template_name: "{{ proxmox_cloudimage_filename.rsplit('.', 1)[0] }}"
 
+- name: remove invalid characters from the vm name
+  ansible.builtin.set_fact:
+    proxmox_cloudimage_template_name: "{{ proxmox_cloudimage_template_name.replace('_', '-') }}"
+
 - name: append releasedate to templatename
   ansible.builtin.set_fact:
     proxmox_cloudimage_template_name: "{{ proxmox_cloudimage_template_name +'-'+ proxmox_cloudimage_release }}"

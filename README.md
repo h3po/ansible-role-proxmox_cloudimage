@@ -17,6 +17,7 @@ Role Variables
 | proxmox_cloudimage_keep | false | keep the file to avoid repeated downloads
 | proxmox_cloudimage_qemuagent | false | install qemu-guest-agent in the image. needs libguestfs-tools installed on the proxmox node
 | proxmox_cloudimage_diskparams | cache=writeback,discard=on | optimal settings for thin provisioned zfs
+
 Example Playbook
 ----------------
 

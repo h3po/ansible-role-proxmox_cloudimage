@@ -1,0 +1,7 @@
+---
+default_proxmox_cloudimage_release: latest
+default_proxmox_cloudimage_repo_subdir: 8-stream/x86_64/images
+default_proxmox_cloudimage_hashtype: sha256
+default_proxmox_cloudimage_type: GenericCloud
+default_proxmox_cloudimage_format: qcow2
+default_proxmox_cloudimage_repo_url: "https://cloud.centos.org/centos/{{ default_proxmox_cloudimage_repo_subdir }}/"

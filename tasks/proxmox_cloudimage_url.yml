@@ -29,6 +29,12 @@
         map('regex_search', '<a href="([^\"]*-%s-(daily-)?%s.%s)">' %
           (proxmox_cloudimage_type, proxmox_cloudimage_release, proxmox_cloudimage_format), '\1')
         | select() | first | first }}
+
+  - name: construct cloudimage url
+    ansible.builtin.set_fact:
+      proxmox_cloudimage_url: >-
+        {{ proxmox_cloudimage_repo_url }}{{ proxmox_cloudimage_release }}/{{ proxmox_cloudimage_filename }}
+
   when: proxmox_cloudimage_distro == "debian"
 
 - name: get cloudimage filename (ubuntu)
@@ -51,9 +57,40 @@
         map('regex_search', '^=\"(\d{8})/\">', '\1')  |
         select() | map('first') | list | last }}
     when: proxmox_cloudimage_release == "current"
+
+  - name: construct cloudimage url
+    ansible.builtin.set_fact:
+      proxmox_cloudimage_url: >-
+        {{ proxmox_cloudimage_repo_url }}{{ proxmox_cloudimage_release }}/{{ proxmox_cloudimage_filename }}
+
   when: proxmox_cloudimage_distro == "ubuntu"
 
-- name: construct cloudimage url
-  ansible.builtin.set_fact:
-    proxmox_cloudimage_url: >-
-      {{ proxmox_cloudimage_repo_url }}{{ proxmox_cloudimage_release }}/{{ proxmox_cloudimage_filename }}
+- name: get cloudimage filename (centos)
+  block:
+  - name: get cloud image versions
+    ansible.builtin.uri:
+      url: "{{ proxmox_cloudimage_repo_url }}"
+      return_content: true
+    register: proxmox_cloudimage_versions_page
+
+  - name: parse latest cloud image version
+    ansible.builtin.set_fact:
+      proxmox_cloudimage_release: >-
+        {{ proxmox_cloudimage_versions_page.content.split('</tr>') |
+        map('regex_search', '<a href="CentOS(?:-Stream)-%s-(\d+-\d{8}\.\d+)\.x86_64\.qcow2"' % proxmox_cloudimage_type, '\1') |
+        select() | map('first') | list | last }}
+    when: proxmox_cloudimage_release == "latest"
+
+  - name: set cloudimage filename
+    ansible.builtin.set_fact:
+      proxmox_cloudimage_filename: >-
+        {{ proxmox_cloudimage_versions_page.content.split('</tr>') |
+        map('regex_search', '<a href="(CentOS(?:-Stream)-%s-%s\.x86_64\.qcow2)"' % (proxmox_cloudimage_type, proxmox_cloudimage_release), '\1') |
+        select() | map('first') | list | last }}
+  
+  - name: construct cloudimage url
+    ansible.builtin.set_fact:
+      proxmox_cloudimage_url: >-
+        {{ proxmox_cloudimage_repo_url }}{{ proxmox_cloudimage_filename }}
+  
+  when: proxmox_cloudimage_distro == "centos-stream"

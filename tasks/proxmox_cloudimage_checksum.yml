@@ -1,13 +1,37 @@
 ---
-- name: get cloudimage checksums
-  ansible.builtin.uri:
-    url: "{{ proxmox_cloudimage_repo_url }}{{ proxmox_cloudimage_release }}/{{ proxmox_cloudimage_hashtype|upper }}SUMS"
-    return_content: true
-  register: proxmox_cloudimage_checksums_file
+- name: get debian/ubuntu image checksum
+  block:
+  - name: get cloudimage checksums
+    ansible.builtin.uri:
+      url: "{{ proxmox_cloudimage_repo_url }}{{ proxmox_cloudimage_release }}/{{ proxmox_cloudimage_hashtype|upper }}SUMS"
+      return_content: true
+    register: proxmox_cloudimage_checksums_file
 
-- name: parse cloud image checksum
-  ansible.builtin.set_fact:
-    proxmox_cloudimage_checksum: >-
-      {{ proxmox_cloudimage_checksums_file.content.split('\n') | 
-      map('regex_search', '(\w+) [ \*]%s' % proxmox_cloudimage_filename, '\1') | 
-      select() | first | first }}
+  - name: parse cloud image checksum
+    ansible.builtin.set_fact:
+      proxmox_cloudimage_checksum: >-
+        {{ proxmox_cloudimage_checksums_file.content.split('\n') | 
+        map('regex_search', '(\w+) [ \*]%s' % proxmox_cloudimage_filename, '\1') | 
+        select() | first | first }}
+
+  when: proxmox_cloudimage_distro in ['debian', 'ubuntu']
+
+- name: get centos image checksum
+  block:
+  - name: get cloudimage checksums
+    ansible.builtin.uri:
+      url: "{{ proxmox_cloudimage_repo_url }}CHECKSUM"
+      return_content: true
+    register: proxmox_cloudimage_checksums_file
+
+  - name: parse cloud image checksum
+    ansible.builtin.set_fact:
+      proxmox_cloudimage_checksum: >-
+        {{ proxmox_cloudimage_checksums_file.content.split('\n') | 
+        map('regex_search', 'SHA256 \(%s\) = (\w+)' % proxmox_cloudimage_filename, '\1') | 
+        select() | first | first }}
+
+  - ansible.builtin.debug:
+      msg: "{{ proxmox_cloudimage_checksum }}"
+
+  when: proxmox_cloudimage_distro in ['centos', 'centos-stream']
