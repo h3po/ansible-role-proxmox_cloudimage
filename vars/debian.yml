@@ -2,6 +2,6 @@
 default_proxmox_cloudimage_release: latest
 default_proxmox_cloudimage_repo_subdir: bullseye
 default_proxmox_cloudimage_hashtype: sha512
-default_proxmox_cloudimage_type: genericcloud-amd64
+default_proxmox_cloudimage_type: generic-amd64
 default_proxmox_cloudimage_format: qcow2
 default_proxmox_cloudimage_repo_url: "https://cloud.debian.org/images/cloud/{{ proxmox_cloudimage_repo_subdir | default(default_proxmox_cloudimage_repo_subdir) }}/"
