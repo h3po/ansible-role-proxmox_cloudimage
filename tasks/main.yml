@@ -75,21 +75,39 @@
         dest: "/tmp/{{ proxmox_cloudimage_filename }}"
         checksum: "{{ proxmox_cloudimage_hashtype }}:{{ proxmox_cloudimage_checksum }}"
         mode: 0644
-    - block:
-      - name: install libguestfs-tools
-        ansible.builtin.apt:
-          name: libguestfs-tools
-          state: present
-      - name: add qemu-guest-agent
-        ansible.builtin.command: virt-customize -a /tmp/{{ proxmox_cloudimage_filename }} --install qemu-guest-agent
-        changed_when: true
+
+    - name: install libguestfs-tools
+      ansible.builtin.apt:
+        name: libguestfs-tools
+        state: present
+      when: proxmox_cloudimage_qemuagent or proxmox_cloudimage_repo_subdir == "bookworm"
+
+    - name: add qemu-guest-agent
+      ansible.builtin.command: virt-customize -a /tmp/{{ proxmox_cloudimage_filename }} --install qemu-guest-agent
+      changed_when: true
       when: proxmox_cloudimage_qemuagent
+    - name: regenerate machine-id
+      when: proxmox_cloudimage_repo_subdir == "bookworm"
+      block:
+      - name: remove /etc/machine-id
+        ansible.builtin.command: virt-customize -a /tmp/{{ proxmox_cloudimage_filename }} --delete /etc/machine-id
+        changed_when: true
+
+      - name: copy cludinit-config to temporary directory
+        ansible.builtin.copy:
+          src: cloudinit-bookworm-fix.cfg
+          dest: /tmp/99-bookworm-fix.cfg
+          owner: root
+          group: root
+          mode: 0644
+
+      - name: add cloudimageconfig
+        ansible.builtin.command: virt-customize -a /tmp/{{ proxmox_cloudimage_filename }} --copy-in /tmp/99-bookworm-fix.cfg:/etc/cloud/cloud.cfg.d
 
     - name: set import facts
       ansible.builtin.set_fact:
         proxmox_cloudimage_import_args: --format {{ proxmox_cloudimage_format }}
       when: proxmox_cloudimage_format in ['raw', 'qcow2', 'vmdk']
-
     - name: set import facts
       ansible.builtin.set_fact:
         proxmox_cloudimage_import_args: ""
@@ -127,5 +145,10 @@
         path: "/tmp/{{ proxmox_cloudimage_filename }}"
         state: absent
       when: not proxmox_cloudimage_keep
+
+    - name: remove cloudinit fix
+      ansible.builtin.file:
+        path: /tmp/99-bookworm-fix.cfg
+        state: absent
 
   when: not proxmox_cloudimage_template_existed
