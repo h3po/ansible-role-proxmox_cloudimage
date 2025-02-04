@@ -123,13 +123,15 @@
         /tmp/{{ proxmox_cloudimage_filename }}
         {{ proxmox_template_storage }} {{ proxmox_cloudimage_import_args }}
       register: qmimportdisk
-      failed_when: "'Successfully imported disk' not in qmimportdisk.stdout"
+      failed_when: 
+        - "'successfully imported disk' not in qmimportdisk.stdout"
+        - "'Successfully imported disk' not in qmimportdisk.stdout"
       changed_when: true
 
     - name: attach the disk as virtio0
       ansible.builtin.command: >-
         qm set {{ proxmox_cloudimage_template_vmid }}
-        -virtio0 {{ qmimportdisk.stdout | regex_search("imported disk as 'unused\d+:([^']+)'", "\1") | first }},{{ ",%s" % proxmox_cloudimage_diskparams if proxmox_cloudimage_diskparams is defined }}
+        -virtio0 {{ qmimportdisk.stdout | regex_search("imported disk (as )?'(unused\d+:)?([^']+)'", "\3") | first }},{{ ",%s" % proxmox_cloudimage_diskparams if proxmox_cloudimage_diskparams is defined }}
       register: qmset
       changed_when: true
     
