@@ -1,0 +1,7 @@
+---
+default_proxmox_cloudimage_release: latest
+default_proxmox_cloudimage_repo_subdir: "9"
+default_proxmox_cloudimage_hashtype: sha256
+default_proxmox_cloudimage_type: GenericCloud-Base
+default_proxmox_cloudimage_format: qcow2
+default_proxmox_cloudimage_repo_url: "https://dl.rockylinux.org/pub/rocky/{{ proxmox_cloudimage_repo_subdir | default(default_proxmox_cloudimage_repo_subdir) }}/images/x86_64"

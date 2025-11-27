@@ -1,6 +1,6 @@
 ---
 - name: import distro specific vars
-  include_vars:
+  ansible.builtin.include_vars:
     dir: vars
     files_matching: "{{ proxmox_cloudimage_distro +'.yml' }}"
 
@@ -14,7 +14,7 @@
     proxmox_cloudimage_repo_url: "{{ proxmox_cloudimage_repo_url | default(default_proxmox_cloudimage_repo_url) }}"
 
 - name: get the name and url of the cloudimage file
-  import_tasks: proxmox_cloudimage_url.yml
+  ansible.builtin.import_tasks: proxmox_cloudimage_url.yml
 
 - name: remove the extension from the image filename to get the vm name
   ansible.builtin.set_fact:
@@ -24,6 +24,11 @@
   ansible.builtin.set_fact:
     proxmox_cloudimage_template_name: "{{ proxmox_cloudimage_template_name +'-'+ proxmox_cloudimage_release }}"
   when: proxmox_cloudimage_distro == "ubuntu"
+
+- name: append releasedate to templatename
+  ansible.builtin.set_fact:
+    proxmox_cloudimage_template_name: "{{ (proxmox_cloudimage_template_name.rsplit('.', 2)[0] | lower) + '-' + proxmox_cloudimage_release_version }}"
+  when: proxmox_cloudimage_distro == "rocky"
 
 - name: get list of vms
   ansible.builtin.command: qm list
@@ -69,17 +74,23 @@
   when: not proxmox_cloudimage_template_existed
 
 - block:
-    - name: download the image
+    - name: download the image from {{ proxmox_cloudimage_url }}
       ansible.builtin.get_url:
+        tmp_dest: /root
         url: "{{ proxmox_cloudimage_url }}"
         dest: "/tmp/{{ proxmox_cloudimage_filename }}"
         checksum: "{{ proxmox_cloudimage_hashtype }}:{{ proxmox_cloudimage_checksum }}"
         mode: 0644
+        timeout: 1200
+      retries: 5
 
     - name: install libguestfs-tools
       ansible.builtin.apt:
-        name: libguestfs-tools
+        name: "{{ item }}"
         state: present
+      loop:
+        - libguestfs-tools
+        - dhcpcd-base
       when: proxmox_cloudimage_qemuagent or 'bookworm' in proxmox_cloudimage_repo_subdir
 
     - name: add qemu-guest-agent
