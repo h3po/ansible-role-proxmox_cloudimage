@@ -1,5 +1,6 @@
 ---
 - name: get cloudimage filename (debian)
+  when: proxmox_cloudimage_distro == "debian"
   block:
   - name: get cloud image versions
     ansible.builtin.uri:
@@ -29,9 +30,9 @@
         map('regex_search', '<a href="([^\"]*-%s-(daily-)?%s.%s)">' %
           (proxmox_cloudimage_type, proxmox_cloudimage_release, proxmox_cloudimage_format), '\1')
         | select() | first | first }}
-  when: proxmox_cloudimage_distro == "debian"
 
 - name: get cloudimage filename (ubuntu)
+  when: proxmox_cloudimage_distro == "ubuntu"
   block:
   - name: set cloudimage filename
     ansible.builtin.set_fact:
@@ -51,7 +52,6 @@
         map('regex_search', '^=\"(\d{8})/\">', '\1')  |
         select() | map('first') | list | last }}
     when: proxmox_cloudimage_release == "current"
-  when: proxmox_cloudimage_distro == "ubuntu"
 
 - name: get cloudimage filename (rocky)
   when: proxmox_cloudimage_distro == "rocky"
@@ -79,8 +79,6 @@
           map('regex_search', '^=\"Rocky-\d{1,}-GenericCloud-Base-(\d{1,}\.{0,}\d{1,}-\d{8})', '\1')  |
           select() | first | first }}
       when: proxmox_cloudimage_release == "latest"
-
-
 
 - name: construct cloudimage url
   when: proxmox_cloudimage_url is not defined
