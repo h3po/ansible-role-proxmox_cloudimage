@@ -12,6 +12,9 @@ galaxy_info:
     - name: Ubuntu
       versions:
         - all
+    - name: Rocky
+      versions:
+        - all
 
   galaxy_tags:
     - proxmox

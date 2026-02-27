@@ -8,11 +8,11 @@ Role Variables
 
 | variable | default value | description/alternatives
 | --- | --- | --- |
-| proxmox_template_pool | | target pool for the template vm
+| proxmox_template_pool | - | target pool for the template vm
 | proxmox_template_storage | local | a storage pool that allows qcow2/raw image files
-| proxmox_cloudimage_distro | debian | ubuntu |
+| proxmox_cloudimage_distro | debian | ubuntu, rocky |
 | proxmox_cloudimage_repo_subdir | bullseye | bullseye/daily, buster, buster/daily, ...
-| proxmox_cloudimage_release | latest | a specific version such as "20220328-962". the daily repository doesn't keep a very long history
+| proxmox_cloudimage_release | latest | a specific version such as "20220328-962". the debian daily repository doesn't keep a very long history
 | proxmox_cloudimage_downloaddir | /tmp | directory to store the downloaded file
 | proxmox_cloudimage_keep | false | keep the file to avoid repeated downloads
 | proxmox_cloudimage_qemuagent | false | install qemu-guest-agent in the image. needs libguestfs-tools installed on the proxmox node

@@ -1,5 +1,6 @@
 ---
 - name: get cloudimage filename (debian)
+  when: proxmox_cloudimage_distro == "debian"
   block:
   - name: get cloud image versions
     ansible.builtin.uri:
@@ -29,9 +30,9 @@
         map('regex_search', '<a href="([^\"]*-%s-(daily-)?%s.%s)">' %
           (proxmox_cloudimage_type, proxmox_cloudimage_release, proxmox_cloudimage_format), '\1')
         | select() | first | first }}
-  when: proxmox_cloudimage_distro == "debian"
 
 - name: get cloudimage filename (ubuntu)
+  when: proxmox_cloudimage_distro == "ubuntu"
   block:
   - name: set cloudimage filename
     ansible.builtin.set_fact:
@@ -51,9 +52,36 @@
         map('regex_search', '^=\"(\d{8})/\">', '\1')  |
         select() | map('first') | list | last }}
     when: proxmox_cloudimage_release == "current"
-  when: proxmox_cloudimage_distro == "ubuntu"
+
+- name: get cloudimage filename (rocky)
+  when: proxmox_cloudimage_distro == "rocky"
+  block:
+    - name: get cloudimage filename
+      ansible.builtin.set_fact:
+        proxmox_cloudimage_filename: Rocky-{{ proxmox_cloudimage_repo_subdir }}-GenericCloud-Base.{{ proxmox_cloudimage_release }}.x86_64.qcow2
+
+    - name: construct cloudimage url
+      ansible.builtin.set_fact:
+        proxmox_cloudimage_url: >-
+          {{ proxmox_cloudimage_repo_url }}/{{ proxmox_cloudimage_filename }}
+
+    - name: get cloudimage releasedate
+      ansible.builtin.uri:
+        url: "{{ proxmox_cloudimage_repo_url }}"
+        return_content: true
+      register: proxmox_cloudimage_versions_page
+      when: proxmox_cloudimage_release == "latest"        
+
+    - name: parse latest rocky cloud image version
+      ansible.builtin.set_fact:
+        proxmox_cloudimage_release_version: >-
+          {{ proxmox_cloudimage_versions_page.content.split('<a href') |
+          map('regex_search', '^=\"Rocky-\d{1,}-GenericCloud-Base-(\d{1,}\.{0,}\d{1,}-\d{8})', '\1')  |
+          select() | first | first }}
+      when: proxmox_cloudimage_release == "latest"
 
 - name: construct cloudimage url
+  when: proxmox_cloudimage_url is not defined
   ansible.builtin.set_fact:
     proxmox_cloudimage_url: >-
       {{ proxmox_cloudimage_repo_url }}{{ proxmox_cloudimage_release }}/{{ proxmox_cloudimage_filename }}
